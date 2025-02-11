@@ -1,4 +1,4 @@
-#Clase producto que se representa en el invenario
+#Clase producto que se representa en el inventario
 class producto:
     #Metodo constructor
     def __init__(self, nombre, precioc,preciov, cantidad):
