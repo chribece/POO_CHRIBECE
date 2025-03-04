@@ -1,5 +1,6 @@
 #Importa módulo que incluye funciones para interactuar con el sistema de archivos
 import os
+import json
 
 #Importa biblioteca para crear tablas
 from tabulate import tabulate
@@ -37,6 +38,18 @@ class Producto:
     def __str__(self):
         return f"ID: {self.id:<15} | Nombre Producto: {self.nombre:<15} | Cantidad: {self.cantidad:<7} | Precio: ${self.precio:<7} "
 
+# metodo para compartir el producto a un diccionario (JSON)
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "nombre": self.nombre,
+            "cantidad": self.cantidad,
+            "precio": self.precio
+        }
+# Metodo de clase para crear un producto desde un diccionario
+    @classmethod
+    def from_dict(cls, data):
+        return cls(data["id"], data["nombre"], data["cantidad"], data["precio"])
 
 #Clase inventario
 class Inventario:
@@ -44,8 +57,8 @@ class Inventario:
     def __init__(self):
         #Diccionario de productos
         self.productos = {}
-        #Archivo donde se almacenara el inventario
-        self.archivo_inventario="inventario.txt"
+        #Archivo donde se almacenara el inventario json
+        self.archivo_inventario="inventario.json"
         #Carga el inventario existente al iniciar
         self.cargar_inventario()
 
@@ -60,36 +73,33 @@ class Inventario:
             if os.path.exists(self.archivo_inventario):
                 #Abre el archivo en modo lectura
                 with open(self.archivo_inventario, "r") as f:
-                    #Lee todas las líneas del archivo en una lista
-                    for linea in f.readlines():
-                        # Verifica si la línea no está vacía elimina espacios en blanco al inicio y final de la línea
-                        if linea.strip():
-                         # Formato esperado: id,nombre,cantidad,precio
-                            datos=linea.strip().split(",")
-                            producto=Producto(int(datos[0]),datos[1],int(datos[2]),float(datos[3]))
-                            self.productos[producto.get_id()]=producto
+                    datos = json.load(f)
+                    # Convierte cada entrada del diccionario en un objeto Producto
+                    self.productos = {int(id):Producto.from_dict(info) for id, info in datos.items()}
                 print("Inventario cargado desde el archivo")
             else:
                 # Crear archivo si no existe
-                open(self.archivo_inventario, "w").close()
+                with open(self.archivo_inventario, "w") as f:
+                    json.dump({}, f)
                 print("Archivo Inventario creado")
-        except Exception as e:
+        except (json.JSONDecodeError, FileNotFoundError) as e:
             print(f"Error al cargar el inventario: {str(e)}")
-
+            # Asegura que el diccionario esté inicializado incluso si falla
+            self. productos = {}
 #Metodo guardar inventario
     def guardar_inventario(self):
     #Guarda el inventario actual en el archivo
         try:
             with open(self.archivo_inventario, "w") as f:
-                for producto in self.productos.values():
-                    linea = f"{producto.get_id()},{producto.get_nombre()}," \
-                            f"{producto.get_cantidad()},{producto.get_precio()} \n"
-                    f.write(linea)
-            print("Cambios guardados en el archivo correctamente")
+                #Convierte los productos a diccionarios y usa el ID como clave
+                datos = {str(producto.get_id()): producto.to_dict() for producto in self.productos.values()}
+                json.dump(datos, f, indent=4)
+            print("Cambios guardados en el archivo JSON correctamente")
         except PermissionError:
             print("No tiene permiso para escribir en el archivo")
         except Exception as e:
             print(f"Error al guardar el inventario: {str(e)}")
+
 #Metodo agregar producto
     def agregar_producto(self, producto):
         if producto.get_id() in self.productos:
