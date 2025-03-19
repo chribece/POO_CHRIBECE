@@ -6,6 +6,7 @@ import datetime  # Importa el módulo datetime para manejar fechas y horas
 
 # Clase principal
 class AgendaPersonal:
+    #Constructor
     def __init__(self, root):
         self.root = root
         self.root.title("Agenda")
@@ -19,18 +20,16 @@ class AgendaPersonal:
         self.style.configure("TLabel", font=('Arial', 10))
         self.style.configure("Yellow.TFrame", background="#fdc307")
 
-        # Creamos los frames para organizar la interfaz
+        #Llamada a los metodos de la interfaz
         self.crear_frames()
-
-        # Creamos los componentes de la interfaz
         self.crear_componentes_visualizacion()
         self.crear_componentes_entrada()
         self.crear_componentes_acciones()
 
-        # Lista para almacenar eventos (podría reemplazarse por una base de datos en una aplicación real)
+        # Lista para almacenar eventos
         self.eventos = []
 
-    # Crea los frames para organizar la interfaz
+    # Metodo para crear los contenedores principales
     def crear_frames(self):
         # Frame para visualizar eventos
         self.frame_visualizacion = ttk.Frame(self.root, padding="10", style="Yellow.TFrame")
@@ -44,6 +43,7 @@ class AgendaPersonal:
         self.frame_acciones = ttk.Frame(self.root, padding="10")
         self.frame_acciones.pack(fill=tk.X)
 
+    # Metodo para crear la sección de visualización de eventos
     def crear_componentes_visualizacion(self):
         titulo_frame = tk.Frame(self.frame_visualizacion, bg="#fdc307")
         titulo_frame.pack(fill=tk.X)
@@ -81,8 +81,9 @@ class AgendaPersonal:
         contenido_frame.columnconfigure(0, weight=1)
         contenido_frame.rowconfigure(0, weight=1)
 
+    # Metodo para crear los campos de entrada
     def crear_componentes_entrada(self):
-        # Crear un sub-frame para organizar los componentes de entrada
+
         entrada_form = ttk.Frame(self.frame_entrada)
         entrada_form.pack(fill=tk.X, padx=5, pady=5)
 
