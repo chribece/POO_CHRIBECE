@@ -10,17 +10,26 @@ class ListaTareas:
         self.root = root
         self.root.title("Lista de Tareas")
         self.root.geometry("800x600")
-        self.root.iconbitmap("gf.ico")
+        # Intentar cargar el icono con manejo de errores
+        try:
+            self.root.iconbitmap("gf.ico")
+        except tk.TclError:
+            print("No se pudo cargar el icono 'gf.ico'. Asegúrate de que el archivo exista.")
         self.root.resizable(True, True)
 
         # Configuración de estilo
         self.style = ttk.Style()
         self.style.configure("Treeview", font=('Arial', 10))
         self.style.configure("TButton", font=('Arial', 10))
-        self.style.configure("TLabel", font=('Arial', 10))
+        self.style.configure("TLabel", font=('Arial', 12,'bold'))
         self.style.configure("Visualizacion.TFrame", background="#1c1c91")
         self.style.configure("Entrada.TFrame", background="#ffbe00")
         self.style.configure("Acciones.TFrame", background="#1c1c91")
+
+        # Configurar estilos para tags del Treeview
+        self.tree_style = ttk.Style()
+        self.style.configure("pendiente.Treeview", background="#ffffff")
+        self.style.configure("completada.Treeview", background="#90ee90")
 
         # Llamada a los metodos de la interfaz
         self.crear_frames()
@@ -31,8 +40,11 @@ class ListaTareas:
         # Lista para almacenar tareas
         self.tareas = []
 
-        # Evento vincular la tecla Enter al metodo agregar_tarea
+        # Atajos de teclado
         self.root.bind('<Return>', lambda event: self.agregar_tarea())
+        self.root.bind('c', lambda event: self.toggle_estado(None))
+        self.root.bind('d', lambda event: self.eliminar_tarea())
+        self.root.bind('<Escape>', lambda event: self.root.quit())
 
     # Metodo para crear los contenedores principales
     def crear_frames(self):
@@ -49,21 +61,19 @@ class ListaTareas:
 
     # Metodo para crear la sección de visualización de tareas
     def crear_componentes_visualizacion(self):
-        titulo_frame = tk.Frame(self.frame_visualizacion, bg="#fdc307")
+        titulo_frame = tk.Frame(self.frame_visualizacion, bg="#1c1c91")
         titulo_frame.pack(fill=tk.X)
 
         # Etiqueta para la sección de visualización centrada
-        tk.Label(titulo_frame, text="Tareas", font=('Arial', 20, 'bold'), bg="#fdc307").pack(
+        tk.Label(titulo_frame, text="Tareas", font=('Arial', 20, 'bold'), bg="#1c1c91",fg="white").pack(
             anchor=tk.CENTER, expand=True)
 
         # Crear un frame para contener el Treeview y scrollbars
-        contenido_frame = tk.Frame(self.frame_visualizacion, bg="#fdc307")
+        contenido_frame = tk.Frame(self.frame_visualizacion, bg="#1c1c91")
         contenido_frame.pack(fill=tk.BOTH, expand=True)
 
         # Modificamos las columnas para incluir estado
-        self.tree = ttk.Treeview(contenido_frame,
-                                 columns=("Fecha", "Tarea", "Estado"),
-                                 show="headings")
+        self.tree = ttk.Treeview(contenido_frame, columns=("Fecha", "Tarea", "Estado"), show="headings")
         self.tree.heading("Fecha", text="Fecha")
         self.tree.heading("Tarea", text="Tarea")
         self.tree.heading("Estado", text="Estado")
@@ -71,6 +81,10 @@ class ListaTareas:
         self.tree.column("Fecha", width=100)
         self.tree.column("Tarea", width=500)
         self.tree.column("Estado", width=100)
+
+        # Configurar tags en el Treeview
+        self.tree.tag_configure("pendiente", background="#ffffff")
+        self.tree.tag_configure("completada", background="#90ee90")
         # Añadir scrollbars
         scrollbar_y = ttk.Scrollbar(contenido_frame, orient=tk.VERTICAL, command=self.tree.yview)
         scrollbar_x = ttk.Scrollbar(contenido_frame, orient=tk.HORIZONTAL, command=self.tree.xview)
@@ -88,17 +102,16 @@ class ListaTareas:
 
         # Metodo para crear los campos de entrada
     def crear_componentes_entrada(self):
-        entrada_form = ttk.Frame(self.frame_entrada)
-        entrada_form.configure(style="Entrada.TFrame")
+        entrada_form = ttk.Frame(self.frame_entrada, style="Entrada.TFrame")
         entrada_form.pack(fill=tk.X, padx=5, pady=5)
 
         # Etiqueta y selector de fecha
-        ttk.Label(entrada_form, text="Fecha:",font=('Arial', 12, 'bold'), background="#ffbe00").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
+        ttk.Label(entrada_form, text="Fecha:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
         self.fecha_selector = DateEntry(entrada_form, width=12, background='darkblue',
                                         foreground='white', borderwidth=2, date_pattern='dd/mm/yyyy')
         self.fecha_selector.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
         # Etiqueta y entrada de  la tarea
-        ttk.Label(entrada_form, text="Tarea:",font=('Arial', 12, 'bold'), background="#ffbe00").grid(row=0, column=2, padx=5, pady=5, sticky=tk.W)
+        ttk.Label(entrada_form, text="Tarea:").grid(row=0, column=2, padx=5, pady=5, sticky=tk.W)
         self.tarea_var = tk.StringVar()
         self.tarea_entry = ttk.Entry(entrada_form, textvariable=self.tarea_var, width=50)
         self.tarea_entry.grid(row=0, column=3, padx=5, pady=5, sticky=tk.W + tk.E)
@@ -129,7 +142,9 @@ class ListaTareas:
 
             tarea_nueva = (fecha, tarea, "Pendiente")
             self.tareas.append(tarea_nueva)
-            self.tree.insert("", tk.END, values=tarea_nueva)
+
+            # Agregar con tag 'pendiente'
+            self.tree.insert("", tk.END, values=tarea_nueva, tags=('pendiente',))
             # Limpiar los campos de entrada
             self.limpiar_campos()
             messagebox.showinfo("Éxito", "Tarea agregada correctamente.")
@@ -166,9 +181,10 @@ class ListaTareas:
         # Cambiar estado
         if valores[2] == "Pendiente":
             valores[2] = "Completada"
+            self.tree.item(item_seleccionado, tags=('completada',))
         else:
             valores[2] = "Pendiente"
-
+            self.tree.item(item_seleccionado, tags=('pendiente',))
         # Actualizar lista y Treeview
         self.tareas[indice] = tuple(valores)
         self.tree.item(item_seleccionado, values=valores)
