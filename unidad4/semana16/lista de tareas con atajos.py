@@ -44,6 +44,8 @@ class ListaTareas:
         self.root.bind('<Return>', lambda event: self.agregar_tarea())
         self.root.bind('c', lambda event: self.toggle_estado(None))
         self.root.bind('d', lambda event: self.eliminar_tarea())
+        self.root.bind('<Delete>', lambda event: self.eliminar_tarea())
+        self.root.bind('<BackSpace>', lambda event: self.eliminar_tarea())
         self.root.bind('<Escape>', lambda event: self.root.quit())
 
     # Metodo para crear los contenedores principales
